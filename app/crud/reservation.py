@@ -5,25 +5,25 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.base import CRUDBase
-from app.models.reservation import Reservation
+from app.models import Reservation, User
 
 
 # Новый класс должен быть унаследован от CRUDBase.
 class CRUDReservation(CRUDBase):
 
     async def get_reservations_at_the_same_time(
-            self,
-            # Добавляем звёздочку, чтобы обозначить,
-            # что все дальнейшие параметры
-            # должны передаваться по ключу. Это позволит располагать
-            # параметры со значением по умолчанию перед
-            # параметрами без таких значений.
-            *,
-            from_reserve: datetime,
-            to_reserve: datetime,
-            meetingroom_id: int,
-            reservation_id: Optional[int] = None,
-            session: AsyncSession,
+        self,
+        # Добавляем звёздочку, чтобы обозначить,
+        # что все дальнейшие параметры
+        # должны передаваться по ключу. Это позволит располагать
+        # параметры со значением по умолчанию перед
+        # параметрами без таких значений.
+        *,
+        from_reserve: datetime,
+        to_reserve: datetime,
+        meetingroom_id: int,
+        reservation_id: Optional[int] = None,
+        session: AsyncSession,
     ) -> list[Reservation]:
         # Выносим уже существующий запрос в отдельное выражение.
         select_stmt = select(Reservation).where(
@@ -51,7 +51,7 @@ class CRUDReservation(CRUDBase):
         session: AsyncSession,
     ):
         reservation = await session.execute(
-            select(Reservation). where(
+            select(Reservation).where(
                 # Где внешний ключ meetingroom_id
                 # равен id запрашиваемой переговорки.
                 Reservation.meetingroom_id == room_id,
@@ -61,6 +61,16 @@ class CRUDReservation(CRUDBase):
         )
         reservation = reservation.scalars().all()
         return reservation
+    
+    async def get_by_user(
+            self, session: AsyncSession, user: User
+    ):
+        reservations = await session.execute(
+            select(Reservation).where(
+                Reservation.user_id == user.id
+            )
+        )
+        return reservations.scalars().all()
 
 
 # Создаём объекта класса CRUDReservation.
